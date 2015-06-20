@@ -14,6 +14,7 @@ module.exports =
     p1 = @executeCommand(text)
     p1.then((result) -> self.displaySuggestions(result, prefix))
 
+
   getPrefix: ({editor, bufferPosition}) ->
     regex = /\S+$/g
     line = editor.getTextInRange([[bufferPosition.row, 0], bufferPosition])
@@ -23,7 +24,6 @@ module.exports =
     self = this
     return new Promise (resolve) ->
       completions = []
-      # resolve(completions) unless suggestions?CompletionMatches
 
       for suggestion, i in suggestions.CompletionMatches
         if i >= 50
@@ -33,13 +33,16 @@ module.exports =
           break
         completions.push({
           text: suggestion.CompletionText + ' ',
+          description: suggestion.ToolTip,
           replacementPrefix: prefix,
+          #leftLabel: suggestion.ResultType,
+          type: suggestion.ResultType,
           rightLabelHTML: self.getRightLabel(suggestion)})
+
 
       resolve(completions)
 
   getRightLabel: (suggestion) ->
-    # console.log(suggestion)
     label = ''
     style = 'variable'
 
@@ -48,16 +51,15 @@ module.exports =
     else if suggestion.ResultType is 'Property' or suggestion.ResultType is 'Method'
       label = /^([a-zA-Z\.\[\]]+)\s+/.exec(suggestion.ToolTip)?[1] or ''
 
-    if label.match(/^string?\[\]/)
+    if label.match(/^string/)
       style = 'string'
-    else if label.match(/^(int|long)?\[\]/)
+    else if label.match(/^(int|long)/)
       style = 'support constant'
 
-    '<span class="text-smaller ' + style + '">' + label + '</span>'
+    '<span class="' + style + '">' + label + '</span>'
 
 
   loadCmdlets: ->
-    atom.notifications.addSuccess('Starting...')
     @initPowershell()
 
   initPowershell: ->
@@ -82,9 +84,9 @@ module.exports =
       output = ''
       self.child.stdout.on 'data', (data) =>
         output += data
-        console.log(output)
+        # console.log(output)
         try
           result = JSON.parse(output) unless error?
           resolve(result)
 
-      self.child.stdin.write(cmd + '\nEOL\n')
+      self.child.stdin.write(cmd + '#EOL#\n')
